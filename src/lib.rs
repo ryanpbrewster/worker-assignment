@@ -112,30 +112,25 @@ mod tests {
     }
 
     #[test]
-    fn naive_reassign() {
-        let workers: Vec<Worker> = vec![Worker(100), Worker(200), Worker(300), Worker(400)];
-        let shards: Vec<u32> = (1..=8).collect();
+    fn reassignment_score_test() {
+        // This test checks to see how expensive it is to add/remove a single
+        // worker, in terms of how many shards get moved around.
+        let workers: Vec<Worker> = (0..100).map(|i| Worker(100 * i)).collect();
+        let shards: Vec<u32> = (1..=800).collect();
 
         assert_eq!(
             score_diff(
                 naive_assign(&workers[0..], &shards, 1),
                 naive_assign(&workers[1..], &shards, 1),
             ),
-            8
+            1_590
         );
-    }
-
-    #[test]
-    fn rendevous_reassign() {
-        let workers: Vec<Worker> = vec![Worker(100), Worker(200), Worker(300), Worker(400)];
-        let shards: Vec<u32> = (1..=8).collect();
-
         assert_eq!(
             score_diff(
                 rendevoux_assign(&workers[0..], &shards, 1),
                 rendevoux_assign(&workers[1..], &shards, 1),
             ),
-            4
+            18
         );
     }
 
