@@ -34,7 +34,7 @@ mod tests {
     use crate::{naive_assign, Worker};
 
     #[test]
-    fn it_works() {
+    fn naive_assign_smoke_test() {
         let workers: Vec<Worker> = vec![Worker(100), Worker(200), Worker(300), Worker(400)];
         let shards: Vec<u32> = (1..=8).collect();
 
@@ -57,6 +57,35 @@ mod tests {
                 (Worker(200), vec![1, 2, 4]),
                 (Worker(300), vec![2, 3, 7]),
                 (Worker(400), vec![3, 5, 6, 7, 8]),
+            ]
+            .into_iter()
+            .collect()
+        );
+    }
+
+    #[test]
+    fn naive_reassign() {
+        let workers: Vec<Worker> = vec![Worker(100), Worker(200), Worker(300), Worker(400)];
+        let shards: Vec<u32> = (1..=8).collect();
+
+        assert_eq!(
+            naive_assign(&workers, &shards, 1),
+            vec![
+                (Worker(100), vec![1, 4]),
+                (Worker(200), vec![2]),
+                (Worker(300), vec![3, 7]),
+                (Worker(400), vec![5, 6, 8]),
+            ]
+            .into_iter()
+            .collect()
+        );
+
+        assert_eq!(
+            naive_assign(&workers[1..], &shards, 1),
+            vec![
+                (Worker(200), vec![1]),
+                (Worker(300), vec![2, 3, 5, 7]),
+                (Worker(400), vec![4, 6, 8]),
             ]
             .into_iter()
             .collect()
