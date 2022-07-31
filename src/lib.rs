@@ -45,11 +45,24 @@ fn h<T: Hash>(t: T) -> usize {
     hasher.finish() as usize
 }
 
+#[macro_use]
 #[cfg(test)]
 mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
     use crate::{naive_assign, rendevoux_assign, Worker};
+
+    macro_rules! assignment {
+        ($($key:expr => $value:expr,)+) => {
+            {
+                let mut acc: BTreeMap<Worker, BTreeSet<u32>> = BTreeMap::new();
+                $(
+                    acc.insert(Worker($key), $value.into_iter().collect());
+                )*
+                acc
+            }
+        };
+    }
 
     #[test]
     fn naive_smoke_test() {
@@ -58,26 +71,22 @@ mod tests {
 
         assert_eq!(
             naive_assign(&workers, &shards, 1),
-            vec![
-                (Worker(100), vec![1, 4].into_iter().collect()),
-                (Worker(200), vec![2].into_iter().collect()),
-                (Worker(300), vec![3, 7].into_iter().collect()),
-                (Worker(400), vec![5, 6, 8].into_iter().collect()),
-            ]
-            .into_iter()
-            .collect()
+            assignment! {
+                100 => [1, 4],
+                200 => [2],
+                300 => [3, 7],
+                400 => [5, 6, 8],
+            },
         );
 
         assert_eq!(
             naive_assign(&workers, &shards, 2),
-            vec![
-                (Worker(100), vec![1, 4, 5, 6, 8].into_iter().collect()),
-                (Worker(200), vec![1, 2, 4].into_iter().collect()),
-                (Worker(300), vec![2, 3, 7].into_iter().collect()),
-                (Worker(400), vec![3, 5, 6, 7, 8].into_iter().collect()),
-            ]
-            .into_iter()
-            .collect()
+            assignment! {
+                100 => [1, 4, 5, 6, 8],
+                200 => [1, 2, 4],
+                300 => [2, 3, 7],
+                400 => [3, 5, 6, 7, 8],
+            },
         );
     }
 
@@ -88,26 +97,22 @@ mod tests {
 
         assert_eq!(
             rendevoux_assign(&workers, &shards, 1),
-            vec![
-                (Worker(100), vec![4, 7].into_iter().collect()),
-                (Worker(200), vec![2, 6, 8].into_iter().collect()),
-                (Worker(300), vec![5].into_iter().collect()),
-                (Worker(400), vec![1, 3].into_iter().collect()),
-            ]
-            .into_iter()
-            .collect()
+            assignment! {
+                100 => [4, 7],
+                200 => [2, 6, 8],
+                300 => [5],
+                400 => [1, 3],
+            },
         );
 
         assert_eq!(
             rendevoux_assign(&workers, &shards, 2),
-            vec![
-                (Worker(100), vec![2, 4, 7].into_iter().collect()),
-                (Worker(200), vec![2, 3, 4, 5, 6, 7, 8].into_iter().collect()),
-                (Worker(300), vec![1, 5].into_iter().collect()),
-                (Worker(400), vec![1, 3, 6, 8].into_iter().collect()),
-            ]
-            .into_iter()
-            .collect()
+            assignment! {
+                100 =>[2, 4, 7],
+                200 =>[2, 3, 4, 5, 6, 7, 8],
+                300 =>[1, 5],
+                400 =>[1, 3, 6, 8],
+            },
         );
     }
 
