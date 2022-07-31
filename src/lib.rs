@@ -23,6 +23,24 @@ pub fn naive_assign(
     acc
 }
 
+pub fn rendevoux_assign(
+    workers: &[Worker],
+    shards: &[u32],
+    redundancy: usize,
+) -> BTreeMap<Worker, Vec<u32>> {
+    let mut acc: BTreeMap<Worker, Vec<u32>> = BTreeMap::new();
+    for &s in shards {
+        let mut ranked = workers.to_owned();
+        ranked.sort_by_key(|w| h((s, w)));
+        for i in 0..redundancy {
+            acc.entry(ranked[i])
+                .or_default()
+                .push(s);
+        }
+    }
+    acc
+}
+
 fn h<T: Hash>(t: T) -> usize {
     let mut hasher = DefaultHasher::new();
     t.hash(&mut hasher);
