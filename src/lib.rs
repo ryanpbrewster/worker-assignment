@@ -1,20 +1,24 @@
-use std::{collections::{HashMap, hash_map::DefaultHasher}, hash::{Hash, Hasher}};
+use std::{
+    collections::{hash_map::DefaultHasher, BTreeMap},
+    hash::{Hash, Hasher},
+};
 
-#[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, Hash, Copy, Clone, PartialOrd, Ord)]
 pub struct Worker(u32);
 
-#[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
-pub struct Shard(u32);
-
 pub fn naive_assign(
-    workers: Vec<Worker>,
-    shards: Vec<Shard>,
+    workers: &[Worker],
+    shards: &[u32],
     redundancy: usize,
-) -> HashMap<Shard, Vec<Worker>> {
-    assert_eq!(redundancy, 1);
-    let mut acc = HashMap::new();
-    for shard in shards {
-        acc.insert(shard, vec![workers[h(shard) % workers.len()]]);
+) -> BTreeMap<Worker, Vec<u32>> {
+    let mut acc: BTreeMap<Worker, Vec<u32>> = BTreeMap::new();
+    for &s in shards {
+        let idx = h(s);
+        for i in 0..redundancy {
+            acc.entry(workers[(idx + i) % workers.len()])
+                .or_default()
+                .push(s);
+        }
     }
     acc
 }
@@ -27,24 +31,35 @@ fn h<T: Hash>(t: T) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Worker, Shard, naive_assign};
+    use crate::{naive_assign, Worker};
 
     #[test]
     fn it_works() {
         let workers: Vec<Worker> = vec![Worker(100), Worker(200), Worker(300), Worker(400)];
-        let shards: Vec<Shard> = (1..=8).map(|i| Shard(i)).collect();
+        let shards: Vec<u32> = (1..=8).collect();
+
         assert_eq!(
-            naive_assign(workers, shards, 1),
+            naive_assign(&workers, &shards, 1),
             vec![
-                (Shard(1), vec![Worker(100)]),
-                (Shard(2), vec![Worker(200)]),
-                (Shard(3), vec![Worker(300)]),
-                (Shard(4), vec![Worker(100)]),
-                (Shard(5), vec![Worker(400)]),
-                (Shard(6), vec![Worker(400)]),
-                (Shard(7), vec![Worker(300)]),
-                (Shard(8), vec![Worker(400)]),
-            ].into_iter().collect()
+                (Worker(100), vec![1, 4]),
+                (Worker(200), vec![2]),
+                (Worker(300), vec![3, 7]),
+                (Worker(400), vec![5, 6, 8]),
+            ]
+            .into_iter()
+            .collect()
+        );
+
+        assert_eq!(
+            naive_assign(&workers, &shards, 2),
+            vec![
+                (Worker(100), vec![1, 4, 5, 6, 8]),
+                (Worker(200), vec![1, 2, 4]),
+                (Worker(300), vec![2, 3, 7]),
+                (Worker(400), vec![3, 5, 6, 7, 8]),
+            ]
+            .into_iter()
+            .collect()
         );
     }
 }
